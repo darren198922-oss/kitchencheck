@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { seedDefaultTemplatesIfEmpty } from "@/lib/seedDefaultTemplates";
+import { listKcTemplates } from "@/lib/kitchencheckSupabase";
 import {
   getLocalDevTemplates,
   getLocalDevSessions,
@@ -40,11 +40,9 @@ export default function KCDashboard() {
           tempLogs = getLocalDevTemperatureLogs();
         } else {
           await seedDefaultTemplatesIfEmpty();
-          [tmpl, sessions, tempLogs] = await Promise.all([
-            base44.entities.ChecklistTemplate.list("name", 50),
-            base44.entities.CheckSession.list("-completed_at", 100),
-            base44.entities.TemperatureLog.list("-logged_at", 50),
-          ]);
+          tmpl = await listKcTemplates();
+          sessions = [];
+          tempLogs = [];
         }
 
         // Filter by active location (templates with no location_id are shown for all)

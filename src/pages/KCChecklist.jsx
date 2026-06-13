@@ -7,6 +7,7 @@ import {
   createLocalDevSession,
   createLocalDevCheckItems,
 } from "@/lib/localDevKitchenCheckData";
+import { listKcTemplates } from "@/lib/kitchencheckSupabase";
 import { CheckCircle2, AlertTriangle, ChevronLeft, Flag, Check, X, Minus, Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -354,7 +355,7 @@ export default function KCChecklist() {
         if (LOCAL_DEV_AUTH) {
           found = getLocalDevTemplates().find(t => t.id === templateId);
         } else {
-          const all = await base44.entities.ChecklistTemplate.list("name", 50);
+          const all = await listKcTemplates();
           found = all.find(t => t.id === templateId);
         }
         if (!found) {
@@ -473,7 +474,8 @@ export default function KCChecklist() {
         );
         console.log("Local dev checklist submitted:", { session, items: savedItems });
       } else {
-        const session = await base44.entities.CheckSession.create({
+        const sessionPayload = {
+          id: `pending-session-${Date.now()}`,
           template_id: template.id,
           template_name: template.name,
           location_id: activeLocationId || template.location_id || "",
@@ -483,21 +485,19 @@ export default function KCChecklist() {
           session_date: today,
           status: anyFlagged ? "flagged" : "completed",
           notes: sessionNotes,
+        };
+        const checkItemsPayload = items.map(item => ({
+          item_text: item.item_text,
+          answer: item.answer,
+          flagged: item.flagged,
+          note: item.answer === "na" && item.na_reason ? item.na_reason : item.note,
+          photo_url: item.photo_url || undefined,
+          item_order: item.item_order,
+        }));
+        console.log("KitchenCheck checklist submitted (sessions not migrated yet):", {
+          session: sessionPayload,
+          items: checkItemsPayload,
         });
-
-        await Promise.all(
-          items.map(item =>
-            base44.entities.CheckItem.create({
-              session_id: session.id,
-              item_text: item.item_text,
-              answer: item.answer,
-              flagged: item.flagged,
-              note: item.answer === "na" && item.na_reason ? item.na_reason : item.note,
-              photo_url: item.photo_url || undefined,
-              item_order: item.item_order,
-            })
-          )
-        );
       }
 
       clearDraft(templateId);

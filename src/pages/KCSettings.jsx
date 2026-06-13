@@ -5,6 +5,12 @@ import {
   getLocalDevTemplates,
   clearLocalDevDataForLocation,
 } from "@/lib/localDevKitchenCheckData";
+import {
+  listKcTemplates,
+  createKcTemplate,
+  updateKcTemplate,
+  deleteKcTemplate,
+} from "@/lib/kitchencheckSupabase";
 import { Plus, Trash2, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, MapPin, ExternalLink, AlertTriangle, FileDown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -469,6 +475,7 @@ function LocationSettings() {
 }
 
 export default function KCSettings() {
+  const { user } = useAuth();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -487,7 +494,7 @@ export default function KCSettings() {
           setTemplates(getLocalDevTemplates());
         } else {
           await seedDefaultTemplatesIfEmpty();
-          const data = await base44.entities.ChecklistTemplate.list("name", 50);
+          const data = await listKcTemplates();
           setTemplates(data);
         }
       } catch (err) {
@@ -516,13 +523,20 @@ export default function KCSettings() {
       return;
     }
     if (!form.name.trim() || form.items.length === 0) return;
+    if (!user?.id) {
+      toast.error("You must be signed in to create a checklist.");
+      return;
+    }
     setSaving(true);
     try {
-      const created = await base44.entities.ChecklistTemplate.create({
+      const created = await createKcTemplate({
+        user_id: user.id,
         name: form.name.trim(),
         checklist_type: form.checklist_type,
         items: form.items.filter(i => i.trim()),
         active: true,
+        location_id: null,
+        is_default: false,
       });
       setTemplates(prev => [...prev, created]);
       setForm({ name: "", checklist_type: "opening", items: [] });
@@ -542,7 +556,7 @@ export default function KCSettings() {
       return;
     }
     try {
-      await base44.entities.ChecklistTemplate.update(tmpl.id, { active: !tmpl.active });
+      await updateKcTemplate(tmpl.id, { active: !tmpl.active });
       setTemplates(prev => prev.map(t => t.id === tmpl.id ? { ...t, active: !t.active } : t));
     } catch (err) {
       console.error("KCSettings toggle template failed:", err);
@@ -556,7 +570,7 @@ export default function KCSettings() {
       return;
     }
     try {
-      await base44.entities.ChecklistTemplate.delete(id);
+      await deleteKcTemplate(id);
       setTemplates(prev => prev.filter(t => t.id !== id));
       toast.success("Checklist deleted");
     } catch (err) {

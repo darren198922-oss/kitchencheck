@@ -1,4 +1,8 @@
-import { base44 } from "@/api/base44Client";
+import {
+  getCurrentSupabaseUser,
+  listKcTemplates,
+  createKcTemplate,
+} from "@/lib/kitchencheckSupabase";
 
 const DEFAULT_TEMPLATES = [
   {
@@ -30,18 +34,34 @@ const DEFAULT_TEMPLATES = [
 
 /**
  * If the current user has no templates at all, seed the two default ones.
- * Called once from KCSettings on first load.
+ * Called from KCDashboard and KCSettings on first load.
  */
 export async function seedDefaultTemplatesIfEmpty() {
   if (import.meta.env.VITE_LOCAL_DEV_AUTH === 'true') {
     return false;
   }
-  const existing = await base44.entities.ChecklistTemplate.list("name", 5);
-  if (existing.length === 0) {
-    await Promise.all(
-      DEFAULT_TEMPLATES.map(t => base44.entities.ChecklistTemplate.create(t))
-    );
-    return true; // seeded
+
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+
+  const existing = await listKcTemplates();
+  if (existing.length > 0) {
+    return false;
   }
-  return false; // already had templates
+
+  await Promise.all(
+    DEFAULT_TEMPLATES.map((t) =>
+      createKcTemplate({
+        user_id: user.id,
+        name: t.name,
+        checklist_type: t.checklist_type,
+        items: t.items,
+        active: true,
+        location_id: null,
+        is_default: true,
+      })
+    )
+  );
+
+  return true;
 }
