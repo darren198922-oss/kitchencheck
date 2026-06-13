@@ -64,7 +64,7 @@ const DEFAULT_ITEMS = {
 
 function DeleteLocationPanel() {
   const navigate = useNavigate();
-  const { activeLocationId, activeLocation, locations, setLocations, setActiveLocationId } = useLocation();
+  const { activeLocationId, activeLocation, deleteLocation } = useLocation();
   const [step, setStep] = useState("idle"); // idle | warn | confirm
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -79,34 +79,13 @@ function DeleteLocationPanel() {
     try {
       if (LOCAL_DEV_AUTH) {
         clearLocalDevDataForLocation(activeLocationId);
-      } else {
-        const allSessions = await base44.entities.CheckSession.list("-completed_at", 500);
-        const locationSessions = allSessions.filter(s => s.location_id === activeLocationId);
-        if (locationSessions.length > 0) {
-          const allItems = await base44.entities.CheckItem.list("item_order", 2000);
-          const sessionIds = new Set(locationSessions.map(s => s.id));
-          const itemsToDelete = allItems.filter(i => sessionIds.has(i.session_id));
-          await Promise.all(itemsToDelete.map(i => base44.entities.CheckItem.delete(i.id)));
-          await Promise.all(locationSessions.map(s => base44.entities.CheckSession.delete(s.id)));
-        }
-
-        const allLogs = await base44.entities.TemperatureLog.list("-logged_at", 1000);
-        const logsToDelete = allLogs.filter(l => l.location_id === activeLocationId);
-        await Promise.all(logsToDelete.map(l => base44.entities.TemperatureLog.delete(l.id)));
-
-        await base44.entities.Location.delete(activeLocationId);
       }
 
-      const remaining = locations.filter(l => l.id !== activeLocationId);
-      setLocations(remaining);
+      const { remaining } = await deleteLocation(activeLocationId);
 
-      // 5. Switch active location or clear
       if (remaining.length > 0) {
-        setActiveLocationId(remaining[0].id);
         toast.success("Location deleted. Connected records for this location were removed.");
       } else {
-        setActiveLocationId(null);
-        localStorage.removeItem("kc_active_location_id");
         toast.success("Location deleted. Connected records for this location were removed.");
         navigate("/settings");
       }
@@ -419,7 +398,7 @@ function AboutSection() {
 }
 
 function LocationSettings() {
-  const { locations, setLocations, activeLocationId, setActiveLocationId } = useLocation();
+  const { locations, activeLocationId, setActiveLocationId, createLocation, updateLocation } = useLocation();
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -428,19 +407,9 @@ function LocationSettings() {
     if (!name) return;
     setSaving(true);
     try {
-      if (LOCAL_DEV_AUTH) {
-        const created = { id: `local-location-${Date.now()}`, name, active: true };
-        setLocations(prev => [...prev, created]);
-        if (!activeLocationId) setActiveLocationId(created.id);
-        setNewName("");
-        toast.success("Kitchen added");
-      } else {
-        const created = await base44.entities.Location.create({ name, active: true });
-        setLocations(prev => [...prev, created]);
-        if (!activeLocationId) setActiveLocationId(created.id);
-        setNewName("");
-        toast.success("Kitchen added");
-      }
+      await createLocation({ name });
+      setNewName("");
+      toast.success("Kitchen added");
     } catch (err) {
       console.error("LocationSettings add failed:", err);
       toast.error("Couldn't add kitchen — please try again");
@@ -451,10 +420,7 @@ function LocationSettings() {
 
   const toggleLocation = async (loc) => {
     try {
-      if (!LOCAL_DEV_AUTH) {
-        await base44.entities.Location.update(loc.id, { active: !loc.active });
-      }
-      setLocations(prev => prev.map(l => l.id === loc.id ? { ...l, active: !l.active } : l));
+      await updateLocation(loc.id, { active: !(loc.active !== false) });
     } catch (err) {
       console.error("LocationSettings toggle failed:", err);
       toast.error("Couldn't update kitchen — please try again");
