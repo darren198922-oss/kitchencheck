@@ -329,13 +329,26 @@ function PracticeDataCleanup() {
 }
 
 function LogoutSection() {
+  const navigate = useNavigate();
   const { logout } = useAuth();
   const [confirming, setConfirming] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
-  const handleLogout = () => {
-    // Clear user-specific localStorage keys before logging out
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError("");
     localStorage.removeItem("kc_active_location_id");
-    logout();
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("KCSettings logout failed:", err);
+      setLogoutError(err.message || "Logout failed. Please try again.");
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -354,11 +367,14 @@ function LogoutSection() {
           <div className="space-y-3">
             <p className="text-sm font-semibold">Log out of KitchenCheck?</p>
             <p className="text-xs text-muted-foreground">Your records, templates, and locations will still be here when you log back in.</p>
+            {logoutError && (
+              <p className="text-xs text-red-600 font-medium">{logoutError}</p>
+            )}
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1 h-11" onClick={handleLogout}>
-                Log out
+              <Button variant="destructive" className="flex-1 h-11" onClick={handleLogout} disabled={loggingOut}>
+                {loggingOut ? "Logging out…" : "Log out"}
               </Button>
-              <Button variant="secondary" className="flex-1 h-11" onClick={() => setConfirming(false)}>
+              <Button variant="secondary" className="flex-1 h-11" onClick={() => setConfirming(false)} disabled={loggingOut}>
                 Cancel
               </Button>
             </div>
