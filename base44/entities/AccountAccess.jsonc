@@ -1,0 +1,94 @@
+{
+  "name": "AccountAccess",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user this access record belongs to"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name for founder dashboard convenience"
+    },
+    "access_mode": {
+      "type": "string",
+      "enum": [
+        "active_trial",
+        "active_paid",
+        "beta_free",
+        "comped",
+        "grandfathered",
+        "expired",
+        "inactive"
+      ],
+      "default": "active_trial",
+      "description": "Current access mode for this account"
+    },
+    "trial_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When the trial or beta access started"
+    },
+    "trial_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When the trial or beta access expires"
+    },
+    "trial_duration_days": {
+      "type": "number",
+      "description": "Trial duration in days (30, 60, 90, or custom)"
+    },
+    "founder_override": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether a founder override is active for this account"
+    },
+    "override_reason": {
+      "type": "string",
+      "description": "Internal note \u2014 reason for override (founder only)"
+    },
+    "override_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "discount_percent",
+        "discount_gbp",
+        "pilot_pricing",
+        "free_access",
+        "comped",
+        "custom"
+      ],
+      "default": "none",
+      "description": "Type of founder override applied"
+    },
+    "discount_percent": {
+      "type": "number",
+      "description": "Custom discount percentage (0-100), if override_type is discount_percent"
+    },
+    "discount_gbp": {
+      "type": "number",
+      "description": "Custom discount in GBP, if override_type is discount_gbp"
+    },
+    "pilot_pricing_note": {
+      "type": "string",
+      "description": "Internal pilot pricing note (e.g. agreed price, arrangement)"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Who approved this override \u2014 Founder, Ads, or authorised senior staff"
+    },
+    "internal_notes": {
+      "type": "string",
+      "description": "Free-form internal notes visible to founder only"
+    },
+    "billing_ready": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether billing is live for this account \u2014 false = billing not yet enabled"
+    }
+  },
+  "required": [
+    "user_email",
+    "access_mode"
+  ]
+}

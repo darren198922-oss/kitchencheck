@@ -1,0 +1,30 @@
+{
+  "name": "ServicePhoto",
+  "type": "object",
+  "properties": {
+    "service_record_id": {
+      "type": "string",
+      "description": "Linked service record ID"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Uploaded photo URL"
+    },
+    "photo_type": {
+      "type": "string",
+      "enum": [
+        "before",
+        "after",
+        "evidence",
+        "other"
+      ]
+    },
+    "caption": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "service_record_id",
+    "photo_url"
+  ]
+}

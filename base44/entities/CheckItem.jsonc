@@ -1,0 +1,80 @@
+{
+  "name": "CheckItem",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Linked session ID"
+    },
+    "item_text": {
+      "type": "string",
+      "description": "The checklist item question/task"
+    },
+    "answer": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "na"
+      ],
+      "description": "Staff answer"
+    },
+    "flagged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this item was flagged as an issue"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note for context or issue description"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Optional photo evidence URL"
+    },
+    "item_order": {
+      "type": "number",
+      "description": "Position in checklist"
+    },
+    "issue_status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "resolved",
+        "not_required"
+      ],
+      "default": "open",
+      "description": "Resolution status for flagged items"
+    },
+    "resolution_note": {
+      "type": "string",
+      "description": "Note describing how the issue was resolved or why it was accepted"
+    },
+    "resolved_at": {
+      "type": "string",
+      "description": "ISO timestamp when the issue was marked resolved"
+    },
+    "resolved_by": {
+      "type": "string",
+      "description": "Name of person who resolved or actioned the issue"
+    }
+  },
+  "required": [
+    "session_id",
+    "item_text",
+    "answer"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
