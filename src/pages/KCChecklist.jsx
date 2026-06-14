@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLocation } from "@/lib/LocationContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -13,6 +12,7 @@ import {
   createKcSession,
   createKcCheckItems,
   deleteKcSession,
+  uploadKcCheckItemPhoto,
 } from "@/lib/kitchencheckSupabase";
 import { CheckCircle2, AlertTriangle, ChevronLeft, Flag, Check, X, Minus, Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,12 +86,10 @@ function PhotoCapture({ photoUrl, onPhotoChange, onSkipWithNote }) {
       const compressed = await compressImage(file);
       if (LOCAL_DEV_AUTH) {
         onPhotoChange(URL.createObjectURL(compressed));
-        setUploadError(false);
       } else {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
-        onPhotoChange(file_url);
-        setUploadError(false);
+        onPhotoChange(URL.createObjectURL(compressed), compressed);
       }
+      setUploadError(false);
     } catch {
       setUploadError(true);
     }
@@ -109,7 +107,7 @@ function PhotoCapture({ photoUrl, onPhotoChange, onSkipWithNote }) {
       <div className="space-y-1">
         <div className="relative">
           <img src={photoUrl} alt="Evidence" className="w-full h-32 object-cover rounded-xl border border-amber-400/30" />
-          <button onClick={() => onPhotoChange("")} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
+          <button onClick={() => onPhotoChange("", null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
             <X className="w-3.5 h-3.5 text-white" />
           </button>
         </div>
@@ -130,7 +128,7 @@ function PhotoCapture({ photoUrl, onPhotoChange, onSkipWithNote }) {
         className="w-full h-11 rounded-xl border-2 border-dashed border-amber-400/40 bg-amber-500/5 flex items-center justify-center gap-2 text-sm font-semibold text-amber-600 active:scale-[0.97] transition-transform"
       >
         {uploading
-          ? <><div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" /> Uploading…</>
+          ? <><div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" /> Preparing…</>
           : <><Camera className="w-4 h-4" /> Photograph the issue</>
         }
       </button>
@@ -139,15 +137,18 @@ function PhotoCapture({ photoUrl, onPhotoChange, onSkipWithNote }) {
           Local dev: photo preview only (upload disabled during migration)
         </p>
       )}
+      {!LOCAL_DEV_AUTH && !uploadError && (
+        <p className="text-[11px] text-muted-foreground text-center">
+          Photo uploads when you submit this check.
+        </p>
+      )}
       {uploadError && (
         <div className="rounded-xl bg-red-500/10 border border-red-400/40 p-3 space-y-2">
           <p className="text-xs font-bold text-red-600 flex items-center gap-1.5">
-            ⚠ {LOCAL_DEV_AUTH ? "Photo preview failed" : "Upload failed — photo not saved"}
+            ⚠ {LOCAL_DEV_AUTH ? "Photo preview failed" : "Photo preparation failed"}
           </p>
           <p className="text-[11px] text-red-500/80">
-            {LOCAL_DEV_AUTH
-              ? "Continue without a photo, or try selecting another image."
-              : "Check your signal and try again, or continue without a photo."}
+            Continue without a photo, or try selecting another image.
           </p>
           <div className="flex gap-2">
             <button
@@ -372,7 +373,7 @@ export default function KCChecklist() {
         setTemplate(found);
         setItems(
           (found.items || []).map((text, i) => ({
-            item_text: text, answer: null, flagged: false, note: "", photo_url: "", na_reason: "", item_order: i,
+            item_text: text, answer: null, flagged: false, note: "", photo_url: "", photo_file: null, na_reason: "", item_order: i,
           }))
         );
         const draft = loadDraft(templateId);
@@ -513,18 +514,30 @@ export default function KCChecklist() {
         }
 
         try {
-          await createKcCheckItems(
-            items.map((item, i) => ({
+          const itemPayloads = [];
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            let photoPath = null;
+            if (item.photo_file) {
+              photoPath = await uploadKcCheckItemPhoto({
+                userId: user.id,
+                locationId: activeLocationId,
+                sessionId: session.id,
+                file: item.photo_file,
+              });
+            }
+            itemPayloads.push({
               user_id: user.id,
               session_id: session.id,
               item_text: item.item_text,
               answer: item.answer,
               note: item.answer === "na" && item.na_reason ? item.na_reason : (item.note?.trim() || null),
-              photo_url: null,
+              photo_url: photoPath,
               order_index: item.item_order ?? i,
               issue_status: item.flagged || item.answer === "no" ? "open" : "not_required",
-            }))
-          );
+            });
+          }
+          await createKcCheckItems(itemPayloads);
         } catch (err) {
           console.error("KCChecklist item create failed:", err);
           try {
@@ -532,7 +545,11 @@ export default function KCChecklist() {
           } catch (rollbackErr) {
             console.error("KCChecklist session rollback failed:", rollbackErr);
           }
-          setSubmitError("Couldn't save checklist answers. Please try again.");
+          setSubmitError(
+            items.some(i => i.photo_file)
+              ? "Couldn't save photos or checklist answers. Please try again."
+              : "Couldn't save checklist answers. Please try again."
+          );
           return;
         }
       }
@@ -796,9 +813,11 @@ export default function KCChecklist() {
               />
               <PhotoCapture
                 photoUrl={current.photo_url}
-                onPhotoChange={url => updateCurrent({ photo_url: url })}
+                onPhotoChange={(url, file) => updateCurrent({ photo_url: url || "", photo_file: file ?? null })}
                 onSkipWithNote={() => updateCurrent({
-                  note: current.note ? current.note + " · Photo not attached" : "Photo not attached"
+                  note: current.note ? current.note + " · Photo not attached" : "Photo not attached",
+                  photo_url: "",
+                  photo_file: null,
                 })}
               />
             </div>

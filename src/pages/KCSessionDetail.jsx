@@ -9,6 +9,7 @@ import {
   listKcCheckItemsBySessionId,
   deleteKcCheckItemsBySessionId,
   deleteKcSession,
+  getKcPhotoSignedUrl,
 } from "@/lib/kitchencheckSupabase";
 import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
 import { useLocation as useKCLocation } from "@/lib/LocationContext";
@@ -26,6 +27,42 @@ const ANSWER_ICONS = {
   no: { icon: X, color: "text-red-500", bg: "bg-red-500/10" },
   na: { icon: Minus, color: "text-muted-foreground", bg: "bg-secondary" },
 };
+
+function CheckItemPhoto({ photoPath, imgClassName, linkHint }) {
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolve() {
+      if (!photoPath) {
+        setUrl(null);
+        return;
+      }
+      if (LOCAL_DEV_AUTH || photoPath.startsWith("http://") || photoPath.startsWith("https://") || photoPath.startsWith("blob:")) {
+        setUrl(photoPath);
+        return;
+      }
+      const signed = await getKcPhotoSignedUrl(photoPath);
+      if (!cancelled) setUrl(signed);
+    }
+
+    resolve();
+    return () => { cancelled = true; };
+  }, [photoPath]);
+
+  if (!photoPath) return null;
+  if (!url) {
+    return <p className="text-[10px] text-muted-foreground mt-1">Photo unavailable</p>;
+  }
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      <img src={url} alt="Issue evidence" className={imgClassName} />
+      {linkHint && <p className="text-[10px] text-amber-500/70 mt-1">{linkHint}</p>}
+    </a>
+  );
+}
 
 export default function KCSessionDetail() {
   const { sessionId } = useParams();
@@ -212,14 +249,11 @@ export default function KCSessionDetail() {
               <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{item.item_text}</p>
               {item.note && <p className="text-xs text-amber-600/80 italic">{item.note}</p>}
               {item.photo_url && (
-                <a href={item.photo_url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={item.photo_url}
-                    alt="Issue evidence"
-                    className="w-full max-h-48 object-cover rounded-xl border border-amber-400/30 mt-1"
-                  />
-                  <p className="text-[10px] text-amber-500/70 mt-1">Tap photo to enlarge</p>
-                </a>
+                <CheckItemPhoto
+                  photoPath={item.photo_url}
+                  imgClassName="w-full max-h-48 object-cover rounded-xl border border-amber-400/30 mt-1"
+                  linkHint="Tap photo to enlarge"
+                />
               )}
               <IssueResolutionPanel item={item} onUpdated={handleItemUpdated} />
             </div>
@@ -246,13 +280,10 @@ export default function KCSessionDetail() {
                   {item.flagged && <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">⚠ Flagged</span>}
                   {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
                   {item.photo_url && (
-                    <a href={item.photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={item.photo_url}
-                        alt="Evidence photo"
-                        className="w-24 h-24 object-cover rounded-lg border border-border mt-1"
-                      />
-                    </a>
+                    <CheckItemPhoto
+                      photoPath={item.photo_url}
+                      imgClassName="w-24 h-24 object-cover rounded-lg border border-border mt-1"
+                    />
                   )}
                 </div>
               </div>

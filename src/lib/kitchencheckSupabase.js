@@ -225,6 +225,51 @@ export async function upsertKcUserSettings(payload) {
   return data;
 }
 
+// ── Storage (checklist photos) ────────────────────────────
+
+const KC_PHOTOS_BUCKET = "kitchencheck-photos";
+
+function safePhotoFileName(name) {
+  const base = (name || "photo.jpg").split("/").pop() || "photo.jpg";
+  return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+}
+
+export async function uploadKcCheckItemPhoto({ userId, locationId, sessionId, file }) {
+  if (!hasSupabaseEnv) return null;
+  if (!userId || !locationId || !sessionId || !file) {
+    throw new Error("uploadKcCheckItemPhoto: missing required fields");
+  }
+
+  const path = `${userId}/${locationId}/${sessionId}/${Date.now()}-${safePhotoFileName(file.name)}`;
+  const { error } = await supabase.storage.from(KC_PHOTOS_BUCKET).upload(path, file, {
+    contentType: file.type || "image/jpeg",
+    upsert: false,
+  });
+  throwOnError(error, "uploadKcCheckItemPhoto failed");
+  return path;
+}
+
+export async function getKcPhotoSignedUrl(path) {
+  if (!hasSupabaseEnv || !path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:")) {
+    return path;
+  }
+
+  try {
+    const { data, error } = await supabase.storage
+      .from(KC_PHOTOS_BUCKET)
+      .createSignedUrl(path, 60 * 60);
+    if (error) {
+      console.error("getKcPhotoSignedUrl failed:", error);
+      return null;
+    }
+    return data?.signedUrl ?? null;
+  } catch (err) {
+    console.error("getKcPhotoSignedUrl failed:", err);
+    return null;
+  }
+}
+
 // ── Diagnostics ───────────────────────────────────────────
 
 export async function checkKitchenCheckSupabaseConnection() {
