@@ -216,9 +216,10 @@ export async function getKcUserSettings() {
 
 export async function upsertKcUserSettings(payload) {
   if (!hasSupabaseEnv) return null;
+  if (!payload?.user_id) return null;
   const { data, error } = await supabase
     .from("kc_user_settings")
-    .upsert(payload)
+    .upsert(payload, { onConflict: "user_id" })
     .select()
     .single();
   throwOnError(error, "upsertKcUserSettings failed");
