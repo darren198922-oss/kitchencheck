@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { seedDefaultTemplatesIfEmpty } from "@/lib/seedDefaultTemplates";
 import {
   getLocalDevTemplates,
@@ -10,6 +9,11 @@ import {
   createKcTemplate,
   updateKcTemplate,
   deleteKcTemplate,
+  listKcSessions,
+  deleteKcCheckItemsBySessionId,
+  deleteKcSession,
+  listKcTemperatureLogs,
+  deleteKcTemperatureLog,
 } from "@/lib/kitchencheckSupabase";
 import { Plus, Trash2, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, MapPin, ExternalLink, AlertTriangle, FileDown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -224,20 +228,19 @@ function PracticeDataCleanup() {
       if (LOCAL_DEV_AUTH) {
         clearLocalDevDataForLocation(activeLocationId);
       } else {
-        const allSessions = await base44.entities.CheckSession.list("-completed_at", 500);
+        const allSessions = await listKcSessions();
         const locationSessions = allSessions.filter(s => s.location_id === activeLocationId);
 
-        if (locationSessions.length > 0) {
-          const allItems = await base44.entities.CheckItem.list("item_order", 2000);
-          const sessionIds = new Set(locationSessions.map(s => s.id));
-          const itemsToDelete = allItems.filter(i => sessionIds.has(i.session_id));
-          await Promise.all(itemsToDelete.map(i => base44.entities.CheckItem.delete(i.id)));
-          await Promise.all(locationSessions.map(s => base44.entities.CheckSession.delete(s.id)));
+        for (const session of locationSessions) {
+          await deleteKcCheckItemsBySessionId(session.id);
+          await deleteKcSession(session.id);
         }
 
-        const allLogs = await base44.entities.TemperatureLog.list("-logged_at", 1000);
+        const allLogs = await listKcTemperatureLogs();
         const logsToDelete = allLogs.filter(l => l.location_id === activeLocationId);
-        await Promise.all(logsToDelete.map(l => base44.entities.TemperatureLog.delete(l.id)));
+        for (const log of logsToDelete) {
+          await deleteKcTemperatureLog(log.id);
+        }
       }
 
       toast.success(`Practice records deleted for ${locationName}`);
