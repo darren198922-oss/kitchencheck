@@ -121,6 +121,19 @@ function issueStatusLabel(status) {
   return labels[status] || kcPdfSafeText(status).replace(/_/g, " ");
 }
 
+function formatTempLogLine(log) {
+  const dateTime = log.logged_at ? kcPdfFmtLondon(log.logged_at) : kcPdfSafeText(log.log_date || "-");
+  const equipment = kcPdfSafeText(log.equipment_name || "Equipment");
+  const tempVal = log.temperature != null
+    ? `${log.temperature > 0 ? "+" : ""}${log.temperature}C`
+    : "-";
+  let line = `${dateTime} - ${equipment} - ${tempVal}`;
+  if (log.logged_by) {
+    line += ` - by ${kcPdfSafeText(log.logged_by)}`;
+  }
+  return line;
+}
+
 function appendIssueDetails(doc, ctx, item, indent = 6) {
   const { checkY, bumpY } = ctx;
   if (item.issue_status) {
@@ -330,7 +343,7 @@ export function downloadKcSessionPdf({ session, items = [] }) {
   return filename;
 }
 
-export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, locationName, startDate, endDate }) {
+export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, temperatureLogs = [], locationName, startDate, endDate }) {
   const generatedAt = kcPdfFmtLondon(new Date().toISOString());
   const ctx = createPdfContext();
   const { doc, checkY, drawDivider } = ctx;
@@ -369,6 +382,7 @@ export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, locat
 
   const summaryRows = [
     ["Check sessions", String(sessions.length)],
+    ["Temperature readings", String(temperatureLogs.length)],
     ["Flagged items", String(allFlagged.length)],
     ["Open / unresolved flagged items", String(openFlagged.length)],
   ];
@@ -383,7 +397,7 @@ export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, locat
     ctx.bumpY(6);
   });
 
-  if (sessions.length === 0) {
+  if (sessions.length === 0 && temperatureLogs.length === 0) {
     ctx.bumpY(4);
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
@@ -504,6 +518,48 @@ export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, locat
         doc.line(MARGIN, ctx.getY(), PAGE_W - MARGIN, ctx.getY());
         ctx.bumpY(6);
       }
+    });
+  }
+
+  drawDivider(8);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("Temperature Logs", MARGIN, ctx.getY());
+  ctx.bumpY(8);
+
+  if (temperatureLogs.length === 0) {
+    checkY(8);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(140);
+    doc.text("No temperature readings recorded in this range.", MARGIN + 2, ctx.getY());
+    doc.setTextColor(0);
+    ctx.bumpY(8);
+  } else {
+    temperatureLogs.forEach((log) => {
+      checkY(10);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(0);
+      const line = formatTempLogLine(log);
+      const lineParts = doc.splitTextToSize(line, CONTENT_W - 4);
+      doc.text(lineParts, MARGIN + 2, ctx.getY());
+      ctx.bumpY(lineParts.length * 4.5 + 1);
+
+      if (log.note) {
+        checkY(6);
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(7.5);
+        doc.setTextColor(100);
+        const noteLines = doc.splitTextToSize(`Note: ${kcPdfSafeText(log.note)}`, CONTENT_W - 8);
+        doc.text(noteLines, MARGIN + 4, ctx.getY());
+        doc.setTextColor(0);
+        ctx.bumpY(noteLines.length * 4 + 2);
+      }
+
+      doc.setDrawColor(235);
+      doc.line(MARGIN, ctx.getY(), PAGE_W - MARGIN, ctx.getY());
+      ctx.bumpY(2);
     });
   }
 

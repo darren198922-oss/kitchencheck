@@ -7,8 +7,9 @@ import { downloadKcHistoryPdf } from "@/lib/kcPdfExport";
 import {
   getLocalDevSessions,
   getLocalDevCheckItemsBySessionId,
+  getLocalDevTemperatureLogs,
 } from "@/lib/localDevKitchenCheckData";
-import { listKcSessions, listKcCheckItemsBySessionId } from "@/lib/kitchencheckSupabase";
+import { listKcSessions, listKcCheckItemsBySessionId, listKcTemperatureLogs } from "@/lib/kitchencheckSupabase";
 import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === 'true';
@@ -46,6 +47,29 @@ function filterSessionsByRange(sessions, locationId, startDate, endDate) {
     .sort((a, b) => (a.session_date > b.session_date ? 1 : -1));
 }
 
+function getLogDate(log) {
+  if (log.log_date) return log.log_date;
+  if (log.logged_at) {
+    try {
+      return format(new Date(log.logged_at), "yyyy-MM-dd");
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+function filterTemperatureLogsByRange(logs, locationId, startDate, endDate) {
+  return logs
+    .filter((l) => {
+      const inLocation = locationId ? l.location_id === locationId : true;
+      const logDate = getLogDate(l);
+      const inRange = logDate >= startDate && logDate <= endDate;
+      return inLocation && inRange;
+    })
+    .sort((a, b) => (a.logged_at || "").localeCompare(b.logged_at || ""));
+}
+
 async function loadHistoryExportData({ locationId, locationName, startDate, endDate }) {
   let sessions;
   if (LOCAL_DEV_AUTH) {
@@ -70,7 +94,12 @@ async function loadHistoryExportData({ locationId, locationName, startDate, endD
     }
   }
 
-  return { sessions, itemsBySession };
+  return { sessions, itemsBySession, temperatureLogs: filterTemperatureLogsByRange(
+    LOCAL_DEV_AUTH ? getLocalDevTemperatureLogs() : await listKcTemperatureLogs(),
+    locationId,
+    startDate,
+    endDate
+  ) };
 }
 
 export default function ExportHistoryModal({ locationId, locationName, onClose }) {
@@ -87,7 +116,7 @@ export default function ExportHistoryModal({ locationId, locationName, onClose }
     }
     setExporting(true);
     try {
-      const { sessions, itemsBySession } = await loadHistoryExportData({
+      const { sessions, itemsBySession, temperatureLogs } = await loadHistoryExportData({
         locationId,
         locationName,
         startDate,
@@ -97,6 +126,7 @@ export default function ExportHistoryModal({ locationId, locationName, onClose }
       downloadKcHistoryPdf({
         sessions,
         itemsBySession,
+        temperatureLogs,
         locationName,
         startDate,
         endDate,
