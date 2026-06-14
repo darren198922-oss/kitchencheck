@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ClipboardCheck, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
@@ -169,6 +169,30 @@ export default function KCLogin() {
           >
             {loading ? "Please wait…" : "Create account"}
           </Button>
+        </div>
+
+        <div className="text-center space-y-2">
+          <p className="text-xs text-muted-foreground">New to KitchenCheck?</p>
+          <nav
+            aria-label="Public information"
+            className="flex flex-wrap items-center justify-center text-xs text-muted-foreground"
+          >
+            <Link to="/pricing" className="hover:text-foreground px-2 py-2">
+              Pricing
+            </Link>
+            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
+            <Link to="/privacy" className="hover:text-foreground px-2 py-2">
+              Privacy
+            </Link>
+            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
+            <Link to="/terms" className="hover:text-foreground px-2 py-2">
+              Terms
+            </Link>
+            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
+            <Link to="/cookies" className="hover:text-foreground px-2 py-2">
+              Cookies
+            </Link>
+          </nav>
         </div>
       </div>
     </div>
