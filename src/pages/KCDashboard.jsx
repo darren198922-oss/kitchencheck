@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { seedDefaultTemplatesIfEmpty } from "@/lib/seedDefaultTemplates";
-import { listKcTemplates } from "@/lib/kitchencheckSupabase";
+import { listKcTemplates, listKcSessions } from "@/lib/kitchencheckSupabase";
 import {
   getLocalDevTemplates,
   getLocalDevSessions,
   getLocalDevTemperatureLogs,
 } from "@/lib/localDevKitchenCheckData";
-import { Link } from "react-router-dom";
+import { Link, useLocation as useRouterLocation } from "react-router-dom";
 import { CheckCircle2, AlertTriangle, ChevronRight, Plus, ClipboardList, Thermometer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -14,7 +14,17 @@ import { useLocation } from "@/lib/LocationContext";
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === 'true';
 
+function normalizeKcSession(session) {
+  const flagged = session.status === "issues_flagged";
+  return {
+    ...session,
+    completed_at: session.submitted_at || session.completed_at,
+    status: flagged ? "flagged" : "completed",
+  };
+}
+
 export default function KCDashboard() {
+  const { pathname } = useRouterLocation();
   const { activeLocationId, activeLocation, loading: locationLoading } = useLocation();
   const activeLocationName = activeLocation?.name || "";
   const [templates, setTemplates] = useState([]);
@@ -41,7 +51,7 @@ export default function KCDashboard() {
         } else {
           await seedDefaultTemplatesIfEmpty();
           tmpl = await listKcTemplates();
-          sessions = [];
+          sessions = (await listKcSessions()).map(normalizeKcSession);
           tempLogs = [];
         }
 
@@ -68,7 +78,7 @@ export default function KCDashboard() {
       }
     }
     load();
-  }, [activeLocationId, locationLoading]);
+  }, [activeLocationId, locationLoading, pathname, today]);
 
   if (loading) return <LoadingSpinner />;
 

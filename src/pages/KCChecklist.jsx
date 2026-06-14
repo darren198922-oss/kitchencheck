@@ -2,12 +2,18 @@ import { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLocation } from "@/lib/LocationContext";
+import { useAuth } from "@/lib/AuthContext";
 import {
   getLocalDevTemplates,
   createLocalDevSession,
   createLocalDevCheckItems,
 } from "@/lib/localDevKitchenCheckData";
-import { listKcTemplates } from "@/lib/kitchencheckSupabase";
+import {
+  listKcTemplates,
+  createKcSession,
+  createKcCheckItems,
+  deleteKcSession,
+} from "@/lib/kitchencheckSupabase";
 import { CheckCircle2, AlertTriangle, ChevronLeft, Flag, Check, X, Minus, Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -331,6 +337,7 @@ export default function KCChecklist() {
   const { templateId } = useParams();
   const navigate = useNavigate();
   const { activeLocationId, activeLocation } = useLocation();
+  const { user } = useAuth();
 
   const [template, setTemplate] = useState(null);
   const [items, setItems] = useState([]);
@@ -474,30 +481,60 @@ export default function KCChecklist() {
         );
         console.log("Local dev checklist submitted:", { session, items: savedItems });
       } else {
-        const sessionPayload = {
-          id: `pending-session-${Date.now()}`,
-          template_id: template.id,
-          template_name: template.name,
-          location_id: activeLocationId || template.location_id || "",
-          location_name: activeLocation?.name || "",
-          completed_by: staffName,
-          completed_at: now,
-          session_date: today,
-          status: anyFlagged ? "flagged" : "completed",
-          notes: sessionNotes,
-        };
-        const checkItemsPayload = items.map(item => ({
-          item_text: item.item_text,
-          answer: item.answer,
-          flagged: item.flagged,
-          note: item.answer === "na" && item.na_reason ? item.na_reason : item.note,
-          photo_url: item.photo_url || undefined,
-          item_order: item.item_order,
-        }));
-        console.log("KitchenCheck checklist submitted (sessions not migrated yet):", {
-          session: sessionPayload,
-          items: checkItemsPayload,
-        });
+        if (!user?.id) {
+          setSubmitError("You must be signed in to submit this check.");
+          return;
+        }
+        if (!activeLocationId) {
+          setSubmitError("Please select a kitchen location before submitting this check.");
+          return;
+        }
+
+        const sessionStatus = anyFlagged ? "issues_flagged" : "all_clear";
+        let session;
+
+        try {
+          session = await createKcSession({
+            user_id: user.id,
+            location_id: activeLocationId,
+            template_id: template.id,
+            template_name: template.name,
+            checklist_type: template.checklist_type,
+            completed_by: staffName,
+            session_date: today,
+            submitted_at: now,
+            status: sessionStatus,
+            notes: sessionNotes.trim() || null,
+          });
+        } catch (err) {
+          console.error("KCChecklist session create failed:", err);
+          setSubmitError("Couldn't save this check. Please try again.");
+          return;
+        }
+
+        try {
+          await createKcCheckItems(
+            items.map((item, i) => ({
+              user_id: user.id,
+              session_id: session.id,
+              item_text: item.item_text,
+              answer: item.answer,
+              note: item.answer === "na" && item.na_reason ? item.na_reason : (item.note?.trim() || null),
+              photo_url: null,
+              order_index: item.item_order ?? i,
+              issue_status: item.flagged || item.answer === "no" ? "open" : "not_required",
+            }))
+          );
+        } catch (err) {
+          console.error("KCChecklist item create failed:", err);
+          try {
+            await deleteKcSession(session.id);
+          } catch (rollbackErr) {
+            console.error("KCChecklist session rollback failed:", rollbackErr);
+          }
+          setSubmitError("Couldn't save checklist answers. Please try again.");
+          return;
+        }
       }
 
       clearDraft(templateId);
