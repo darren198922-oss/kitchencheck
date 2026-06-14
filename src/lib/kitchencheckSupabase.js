@@ -122,6 +122,7 @@ export async function deleteKcSession(id) {
 
 // ── Check items ───────────────────────────────────────────
 
+// Reserved for future admin/reporting use; prefer listKcCheckItemsBySessionId for session reads.
 export async function listKcCheckItems() {
   if (!hasSupabaseEnv) return [];
   const { data, error } = await supabase.from("kc_check_items").select("*");

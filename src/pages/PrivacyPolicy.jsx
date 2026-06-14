@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
 
           <section className="space-y-2">
             <h2 className="font-bold text-base">Staff names</h2>
-            <p>Staff names entered during checks are stored as part of the compliance record. These are operational records — not personal profiles. Staff names are not used for any other purpose.</p>
+            <p>Staff names entered during checks are stored as part of the operational record. These are not personal profiles. Staff names are not used for any other purpose.</p>
           </section>
 
           <section className="space-y-2">

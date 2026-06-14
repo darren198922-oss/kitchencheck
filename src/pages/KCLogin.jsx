@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardCheck, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { hasSupabaseEnv } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === "true";
+
 export default function KCLogin() {
   const navigate = useNavigate();
   const { login, signup, isAuthenticated, isLoadingAuth } = useAuth();
+  const notConfigured = !LOCAL_DEV_AUTH && !hasSupabaseEnv;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,6 +91,14 @@ export default function KCLogin() {
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-5 space-y-4 shadow-sm">
+          {notConfigured && (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2.5">
+              <p className="text-xs text-amber-900 dark:text-amber-200 font-medium">
+                KitchenCheck is not configured yet. Please contact support.
+              </p>
+            </div>
+          )}
+
           <form className="space-y-4" onSubmit={handleSignIn}>
             <div className="space-y-2">
               <Label htmlFor="kc-login-email">Email</Label>
@@ -98,7 +110,7 @@ export default function KCLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@kitchen.com"
                 className="h-11 rounded-xl"
-                disabled={loading}
+                disabled={loading || notConfigured}
               />
             </div>
 
@@ -113,14 +125,14 @@ export default function KCLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="h-11 rounded-xl pr-11"
-                  disabled={loading}
+                  disabled={loading || notConfigured}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  disabled={loading}
+                  disabled={loading || notConfigured}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -142,7 +154,7 @@ export default function KCLogin() {
             <Button
               type="submit"
               className="w-full h-11 text-sm font-bold"
-              disabled={loading}
+              disabled={loading || notConfigured}
             >
               {loading ? "Signing in…" : "Sign in"}
             </Button>
@@ -152,7 +164,7 @@ export default function KCLogin() {
             type="button"
             variant="outline"
             className="w-full h-11 text-sm font-semibold"
-            disabled={loading}
+            disabled={loading || notConfigured}
             onClick={handleSignUp}
           >
             {loading ? "Please wait…" : "Create account"}
