@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { format, subDays, startOfMonth } from "date-fns";
 import { X, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { downloadKcHistoryPdf } from "@/lib/kcPdfExport";
+import {
+  getLocalDevSessions,
+  getLocalDevCheckItemsBySessionId,
+} from "@/lib/localDevKitchenCheckData";
+import { listKcSessions, listKcCheckItemsBySessionId } from "@/lib/kitchencheckSupabase";
+import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === 'true';
 
@@ -30,6 +36,43 @@ function getDateRange(rangeValue, customStart, customEnd) {
   }
 }
 
+function filterSessionsByRange(sessions, locationId, startDate, endDate) {
+  return sessions
+    .filter((s) => {
+      const inLocation = locationId ? s.location_id === locationId : true;
+      const inRange = s.session_date >= startDate && s.session_date <= endDate;
+      return inLocation && inRange;
+    })
+    .sort((a, b) => (a.session_date > b.session_date ? 1 : -1));
+}
+
+async function loadHistoryExportData({ locationId, locationName, startDate, endDate }) {
+  let sessions;
+  if (LOCAL_DEV_AUTH) {
+    sessions = filterSessionsByRange(getLocalDevSessions(), locationId, startDate, endDate);
+  } else {
+    const allSessions = (await listKcSessions()).map((s) => normalizeKcSession(s, locationName));
+    sessions = filterSessionsByRange(allSessions, locationId, startDate, endDate);
+  }
+
+  const itemsBySession = {};
+  for (const session of sessions) {
+    try {
+      const rawItems = LOCAL_DEV_AUTH
+        ? getLocalDevCheckItemsBySessionId(session.id)
+        : await listKcCheckItemsBySessionId(session.id);
+      itemsBySession[session.id] = rawItems
+        .map((item) => (LOCAL_DEV_AUTH ? item : normalizeKcCheckItem(item)))
+        .sort((a, b) => (a.item_order || 0) - (b.item_order || 0));
+    } catch (err) {
+      console.error(`ExportHistoryModal items load failed for session ${session.id}:`, err);
+      itemsBySession[session.id] = [];
+    }
+  }
+
+  return { sessions, itemsBySession };
+}
+
 export default function ExportHistoryModal({ locationId, locationName, onClose }) {
   const [range, setRange] = useState("last7");
   const [customStart, setCustomStart] = useState(format(subDays(new Date(), 6), "yyyy-MM-dd"));
@@ -44,28 +87,26 @@ export default function ExportHistoryModal({ locationId, locationName, onClose }
     }
     setExporting(true);
     try {
-      if (LOCAL_DEV_AUTH) {
-        toast.error("PDF export is disabled in local migration mode");
-        return;
-      }
-      const response = await base44.functions.invoke("generateHistoryPdf", {
+      const { sessions, itemsBySession } = await loadHistoryExportData({
         locationId,
         locationName,
         startDate,
         endDate,
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `kitchencheck-history-${startDate}-to-${endDate}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+
+      downloadKcHistoryPdf({
+        sessions,
+        itemsBySession,
+        locationName,
+        startDate,
+        endDate,
+      });
+
       toast.success("History PDF saved");
       onClose();
     } catch (err) {
       console.error("ExportHistoryModal export failed:", err);
-      toast.error("Export failed — please try again");
+      toast.error("Couldn't generate PDF — please try again");
     } finally {
       setExporting(false);
     }

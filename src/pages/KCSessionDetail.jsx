@@ -12,6 +12,7 @@ import {
   getKcPhotoSignedUrl,
 } from "@/lib/kitchencheckSupabase";
 import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
+import { downloadKcSessionPdf } from "@/lib/kcPdfExport";
 import { useLocation as useKCLocation } from "@/lib/LocationContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, X, AlertTriangle, ChevronLeft, Minus, FileDown, Trash2 } from "lucide-react";
@@ -138,8 +139,17 @@ export default function KCSessionDetail() {
   };
 
   const handleExportPdf = async () => {
-    if (exportingPdf) return;
-    toast.error("PDF export is disabled during migration");
+    if (exportingPdf || !session) return;
+    setExportingPdf(true);
+    try {
+      downloadKcSessionPdf({ session, items: checkItems });
+      toast.success("PDF saved");
+    } catch (err) {
+      console.error("KCSessionDetail PDF export failed:", err);
+      toast.error("Couldn't generate PDF — please try again");
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   if (loading) return (
