@@ -422,26 +422,30 @@ export default function KCTempLog() {
         </div>
 
         {/* + / - segmented control */}
-        <div className="flex rounded-xl border-2 border-border overflow-hidden">
+        <div className="grid grid-cols-2 rounded-xl border-2 border-border overflow-hidden">
           <button
+            type="button"
             onClick={() => setIsNegative(false)}
-            className={`flex-1 h-12 text-base font-bold transition-colors ${
+            className={`flex min-w-0 flex-col items-center justify-center gap-1 min-h-[3.5rem] px-3 py-3 text-center transition-colors ${
               !isNegative
                 ? "bg-primary text-primary-foreground"
                 : "bg-card text-muted-foreground"
             }`}
           >
-            + Above zero
+            <span className="text-xl font-bold leading-none">+</span>
+            <span className="text-xs font-semibold leading-snug">Above zero</span>
           </button>
           <button
+            type="button"
             onClick={() => setIsNegative(true)}
-            className={`flex-1 h-12 text-base font-bold transition-colors border-l-2 border-border ${
+            className={`flex min-w-0 flex-col items-center justify-center gap-1 min-h-[3.5rem] px-3 py-3 text-center transition-colors border-l-2 border-border ${
               isNegative
                 ? "bg-primary text-primary-foreground"
                 : "bg-card text-muted-foreground"
             }`}
           >
-            − Below zero
+            <span className="text-xl font-bold leading-none">−</span>
+            <span className="text-xs font-semibold leading-snug">Below zero</span>
           </button>
         </div>
         <p className="text-[11px] text-muted-foreground text-center -mt-1">

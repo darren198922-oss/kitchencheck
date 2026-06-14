@@ -39,13 +39,21 @@ export function kcPdfFooterText(generatedAt) {
   return `KitchenCheck - Generated ${generatedAt} - Operational record only - not a compliance certificate`;
 }
 
-function kcPdfSafeFilename(part) {
-  return (part || "report")
+export function kcPdfSafeFilename(part, fallback = "report") {
+  const slug = String(part ?? "")
+    .trim()
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9._-]/g, "")
     .replace(/-+/g, "-")
-    .slice(0, 80) || "report";
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+  return slug || fallback;
+}
+
+function kcPdfLocationSlug(locationName) {
+  const slug = kcPdfSafeFilename(locationName, "");
+  return slug || "kitchencheck";
 }
 
 function createPdfContext() {
@@ -166,7 +174,7 @@ function appendIssueDetails(doc, ctx, item, indent = 6) {
   }
 }
 
-export function downloadKcSessionPdf({ session, items = [] }) {
+export function downloadKcSessionPdf({ session, items = [], locationName }) {
   if (!session) throw new Error("Session is required");
 
   const sortedItems = [...items].sort((a, b) => (a.item_order || 0) - (b.item_order || 0));
@@ -338,7 +346,8 @@ export function downloadKcSessionPdf({ session, items = [] }) {
 
   addPdfFooters(doc, generatedAt);
 
-  const filename = `kitchencheck-${kcPdfSafeFilename(session.template_name || "session")}-${kcPdfSafeFilename(session.session_date || "report")}.pdf`;
+  const locSlug = kcPdfLocationSlug(locationName || session.location_name);
+  const filename = `${locSlug}-${kcPdfSafeFilename(session.template_name || "session")}-${kcPdfSafeFilename(session.session_date || "report")}.pdf`;
   doc.save(filename);
   return filename;
 }
@@ -565,7 +574,8 @@ export function downloadKcHistoryPdf({ sessions = [], itemsBySession = {}, tempe
 
   addPdfFooters(doc, generatedAt);
 
-  const filename = `kitchencheck-history-${kcPdfSafeFilename(startDate)}-to-${kcPdfSafeFilename(endDate)}.pdf`;
+  const locSlug = kcPdfLocationSlug(locationName);
+  const filename = `${locSlug}-history-${kcPdfSafeFilename(startDate)}-to-${kcPdfSafeFilename(endDate)}.pdf`;
   doc.save(filename);
   return filename;
 }

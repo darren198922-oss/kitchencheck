@@ -142,7 +142,11 @@ export default function KCSessionDetail() {
     if (exportingPdf || !session) return;
     setExportingPdf(true);
     try {
-      downloadKcSessionPdf({ session, items: checkItems });
+      downloadKcSessionPdf({
+        session,
+        items: checkItems,
+        locationName: session.location_name,
+      });
       toast.success("PDF saved");
     } catch (err) {
       console.error("KCSessionDetail PDF export failed:", err);
