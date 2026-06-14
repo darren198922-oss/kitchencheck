@@ -72,6 +72,22 @@ const DEFAULT_ITEMS = {
   custom: ["Item 1", "Item 2"],
 };
 
+async function deleteConnectedRecordsForLocation(locationId) {
+  const allSessions = await listKcSessions();
+  const locationSessions = allSessions.filter(s => s.location_id === locationId);
+
+  for (const session of locationSessions) {
+    await deleteKcCheckItemsBySessionId(session.id);
+    await deleteKcSession(session.id);
+  }
+
+  const allLogs = await listKcTemperatureLogs();
+  const logsToDelete = allLogs.filter(l => l.location_id === locationId);
+  for (const log of logsToDelete) {
+    await deleteKcTemperatureLog(log.id);
+  }
+}
+
 function DeleteLocationPanel() {
   const navigate = useNavigate();
   const { activeLocationId, activeLocation, deleteLocation } = useLocation();
@@ -89,14 +105,14 @@ function DeleteLocationPanel() {
     try {
       if (LOCAL_DEV_AUTH) {
         clearLocalDevDataForLocation(activeLocationId);
+      } else {
+        await deleteConnectedRecordsForLocation(activeLocationId);
       }
 
       const { remaining } = await deleteLocation(activeLocationId);
 
-      if (remaining.length > 0) {
-        toast.success("Location deleted. Connected records for this location were removed.");
-      } else {
-        toast.success("Location deleted. Connected records for this location were removed.");
+      toast.success("Location and connected practice records removed.");
+      if (remaining.length === 0) {
         navigate("/settings");
       }
 
@@ -228,19 +244,7 @@ function PracticeDataCleanup() {
       if (LOCAL_DEV_AUTH) {
         clearLocalDevDataForLocation(activeLocationId);
       } else {
-        const allSessions = await listKcSessions();
-        const locationSessions = allSessions.filter(s => s.location_id === activeLocationId);
-
-        for (const session of locationSessions) {
-          await deleteKcCheckItemsBySessionId(session.id);
-          await deleteKcSession(session.id);
-        }
-
-        const allLogs = await listKcTemperatureLogs();
-        const logsToDelete = allLogs.filter(l => l.location_id === activeLocationId);
-        for (const log of logsToDelete) {
-          await deleteKcTemperatureLog(log.id);
-        }
+        await deleteConnectedRecordsForLocation(activeLocationId);
       }
 
       toast.success(`Practice records deleted for ${locationName}`);
