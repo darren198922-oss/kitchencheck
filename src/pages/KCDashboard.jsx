@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { seedDefaultTemplatesIfEmpty } from "@/lib/seedDefaultTemplates";
-import { listKcTemplates, listKcSessions } from "@/lib/kitchencheckSupabase";
+import { listKcTemplates, listKcSessions, listKcTemperatureLogs } from "@/lib/kitchencheckSupabase";
 import {
   getLocalDevTemplates,
   getLocalDevSessions,
@@ -52,7 +52,7 @@ export default function KCDashboard() {
           await seedDefaultTemplatesIfEmpty();
           tmpl = await listKcTemplates();
           sessions = (await listKcSessions()).map(normalizeKcSession);
-          tempLogs = [];
+          tempLogs = await listKcTemperatureLogs();
         }
 
         // Filter by active location (templates with no location_id are shown for all)

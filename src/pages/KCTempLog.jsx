@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import {
   getLocalDevTemperatureLogs,
   createLocalDevTemperatureLog,
   deleteLocalDevTemperatureLog,
 } from "@/lib/localDevKitchenCheckData";
+import {
+  listKcTemperatureLogs,
+  createKcTemperatureLog,
+  deleteKcTemperatureLog,
+} from "@/lib/kitchencheckSupabase";
+import { useAuth } from "@/lib/AuthContext";
 import { ChevronLeft, Thermometer, CheckCircle2, Plus, Settings, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -111,6 +116,8 @@ function EquipmentSettings({ onClose }) {
 
 export default function KCTempLog() {
   const navigate = useNavigate();
+  const { pathname } = useRouterLocation();
+  const { user } = useAuth();
   const { activeLocationId, activeLocation } = useKCLocation();
   const [phase, setPhase] = useState("select");
   const [showSettings, setShowSettings] = useState(false);
@@ -132,6 +139,7 @@ export default function KCTempLog() {
   const [confirmDeleteLogId, setConfirmDeleteLogId] = useState(null);
 
 
+
   useEffect(() => {
     if (!activeLocationId) {
       setRecentLogs([]);
@@ -142,7 +150,7 @@ export default function KCTempLog() {
       try {
         const logs = LOCAL_DEV_AUTH
           ? getLocalDevTemperatureLogs()
-          : await base44.entities.TemperatureLog.list("-logged_at", 50);
+          : await listKcTemperatureLogs();
         setRecentLogs(logs.filter(l => l.log_date === today && l.location_id === activeLocationId));
       } catch (err) {
         console.error("KCTempLog load failed:", err);
@@ -150,14 +158,14 @@ export default function KCTempLog() {
       }
     }
     loadLogs();
-  }, [lastLog, activeLocationId]);
+  }, [lastLog, activeLocationId, pathname]);
 
   const handleDeleteLog = async (id) => {
     try {
       if (LOCAL_DEV_AUTH) {
         deleteLocalDevTemperatureLog(id);
       } else {
-        await base44.entities.TemperatureLog.delete(id);
+        await deleteKcTemperatureLog(id);
       }
       setRecentLogs(prev => prev.filter(l => l.id !== id));
       toast.success("Temperature log deleted");
@@ -190,10 +198,15 @@ export default function KCTempLog() {
       toast.error("Please select a kitchen location in Settings before logging temperatures.");
       return;
     }
+    if (!LOCAL_DEV_AUTH && !user?.id) {
+      toast.error("You must be signed in to log temperatures.");
+      return;
+    }
     setSaving(true);
     setSaveError(false);
     try {
       const now = new Date().toISOString();
+      const today = format(new Date(), "yyyy-MM-dd");
       const log = LOCAL_DEV_AUTH
         ? createLocalDevTemperatureLog({
             location_id: activeLocationId,
@@ -201,17 +214,18 @@ export default function KCTempLog() {
             temperature: numericTemp,
             logged_by: staffName,
             logged_at: now,
-            log_date: format(new Date(), "yyyy-MM-dd"),
+            log_date: today,
             note: note.trim() || undefined,
           })
-        : await base44.entities.TemperatureLog.create({
+        : await createKcTemperatureLog({
+            user_id: user.id,
             location_id: activeLocationId,
             equipment_name: effectiveEquipment,
             temperature: numericTemp,
             logged_by: staffName,
             logged_at: now,
-            log_date: format(new Date(), "yyyy-MM-dd"),
-            note: note.trim() || undefined,
+            log_date: today,
+            note: note.trim() || null,
           });
       setLastLog(log);
       setPhase("done");
