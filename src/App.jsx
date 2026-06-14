@@ -20,6 +20,8 @@ import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
 import KCLogin from './pages/KCLogin';
 
+const PUBLIC_PATHS = new Set(['/login', '/pricing', '/privacy', '/terms', '/cookies']);
+
 const AuthenticatedApp = () => {
   const { pathname } = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -39,7 +41,7 @@ const AuthenticatedApp = () => {
     return <KCLogin />;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !PUBLIC_PATHS.has(pathname)) {
     return <Navigate to="/login" replace />;
   }
 
