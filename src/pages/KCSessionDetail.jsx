@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import {
   getLocalDevSessions,
   getLocalDevCheckItemsBySessionId,
   deleteLocalDevSession,
 } from "@/lib/localDevKitchenCheckData";
+import {
+  listKcSessions,
+  listKcCheckItemsBySessionId,
+  deleteKcCheckItemsBySessionId,
+  deleteKcSession,
+} from "@/lib/kitchencheckSupabase";
+import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
+import { useLocation as useKCLocation } from "@/lib/LocationContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, X, AlertTriangle, ChevronLeft, Minus, FileDown, Trash2 } from "lucide-react";
 import IssueResolutionPanel from "@/components/sessions/IssueResolutionPanel";
@@ -23,6 +30,7 @@ const ANSWER_ICONS = {
 export default function KCSessionDetail() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const { locations } = useKCLocation();
   const [session, setSession] = useState(null);
   const [checkItems, setCheckItems] = useState([]);
   const handleItemUpdated = (updated) => {
@@ -46,13 +54,15 @@ export default function KCSessionDetail() {
           found = getLocalDevSessions().find(s => s.id === sessionId);
           items = getLocalDevCheckItemsBySessionId(sessionId);
         } else {
-          const [allSessions, allItems] = await Promise.all([
-            base44.entities.CheckSession.list("-completed_at", 200),
-            base44.entities.CheckItem.list("item_order", 500),
-          ]);
+          const allSessions = await listKcSessions();
           found = allSessions.find(s => s.id === sessionId);
-          items = allItems
-            .filter(i => i.session_id === sessionId)
+          if (found) {
+            const locationName = locations.find(l => l.id === found.location_id)?.name || "";
+            found = normalizeKcSession(found, locationName);
+          }
+          const rawItems = await listKcCheckItemsBySessionId(sessionId);
+          items = rawItems
+            .map(normalizeKcCheckItem)
             .sort((a, b) => (a.item_order || 0) - (b.item_order || 0));
         }
         if (!found) {
@@ -69,7 +79,7 @@ export default function KCSessionDetail() {
       }
     }
     load();
-  }, [sessionId]);
+  }, [sessionId, locations]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -77,8 +87,8 @@ export default function KCSessionDetail() {
       if (LOCAL_DEV_AUTH) {
         deleteLocalDevSession(session.id);
       } else {
-        await Promise.all(checkItems.map(item => base44.entities.CheckItem.delete(item.id)));
-        await base44.entities.CheckSession.delete(session.id);
+        await deleteKcCheckItemsBySessionId(session.id);
+        await deleteKcSession(session.id);
       }
       toast.success("Record deleted");
       navigate("/history");
@@ -92,27 +102,7 @@ export default function KCSessionDetail() {
 
   const handleExportPdf = async () => {
     if (exportingPdf) return;
-    if (LOCAL_DEV_AUTH) {
-      toast.error("PDF export is disabled in local migration mode");
-      return;
-    }
-    setExportingPdf(true);
-    try {
-      const response = await base44.functions.invoke("generateSessionPdf", { sessionId });
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `kitchencheck-${session.template_name?.replace(/\s+/g, "-").toLowerCase()}-${session.session_date}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF saved");
-    } catch (err) {
-      console.error("KCSessionDetail PDF export failed:", err);
-      toast.error("PDF generation failed — please try again");
-    } finally {
-      setExportingPdf(false);
-    }
+    toast.error("PDF export is disabled during migration");
   };
 
   if (loading) return (

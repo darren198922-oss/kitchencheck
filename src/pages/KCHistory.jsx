@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { getLocalDevSessions } from "@/lib/localDevKitchenCheckData";
-import { Link } from "react-router-dom";
+import { listKcSessions } from "@/lib/kitchencheckSupabase";
+import { normalizeKcSession } from "@/lib/kcSessionNormalize";
+import { Link, useLocation as useRouterLocation } from "react-router-dom";
 import { CheckCircle2, AlertTriangle, ChevronRight, Search, ShieldCheck, FileDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "@/lib/LocationContext";
@@ -10,6 +11,7 @@ import ExportHistoryModal from "@/components/history/ExportHistoryModal";
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === 'true';
 
 export default function KCHistory() {
+  const { pathname } = useRouterLocation();
   const { activeLocationId, activeLocation, loading: locationLoading } = useLocation();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function KCHistory() {
       try {
         const data = LOCAL_DEV_AUTH
           ? getLocalDevSessions()
-          : await base44.entities.CheckSession.list("-completed_at", 200);
+          : (await listKcSessions()).map(normalizeKcSession);
         const filtered = data.filter(s =>
           !s.location_id || !activeLocationId || s.location_id === activeLocationId
         );
@@ -36,7 +38,7 @@ export default function KCHistory() {
       }
     }
     load();
-  }, [activeLocationId, locationLoading]);
+  }, [activeLocationId, locationLoading, pathname]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

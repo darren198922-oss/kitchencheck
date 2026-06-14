@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { updateLocalDevCheckItem } from "@/lib/localDevKitchenCheckData";
+import { updateKcCheckItem } from "@/lib/kitchencheckSupabase";
+import { normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
 import { CheckCircle2, Clock, Wrench, MinusCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -38,8 +39,8 @@ export default function IssueResolutionPanel({ item, onUpdated }) {
         const updated = updateLocalDevCheckItem(item.id, patch);
         onUpdated(updated || { ...item, ...patch });
       } else {
-        await base44.entities.CheckItem.update(item.id, patch);
-        onUpdated({ ...item, ...patch });
+        const updated = await updateKcCheckItem(item.id, patch);
+        onUpdated(normalizeKcCheckItem(updated || { ...item, ...patch }));
       }
       setExpanded(false);
       toast.success("Issue status updated");
