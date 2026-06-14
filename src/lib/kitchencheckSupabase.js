@@ -6,6 +6,15 @@ function throwOnError(error, context) {
   }
 }
 
+async function listKcRowsForCurrentUser(table, context) {
+  if (!hasSupabaseEnv) return [];
+  const user = await getCurrentSupabaseUser();
+  if (!user) return [];
+  const { data, error } = await supabase.from(table).select("*").eq("user_id", user.id);
+  throwOnError(error, context);
+  return data ?? [];
+}
+
 // ── Auth ──────────────────────────────────────────────────
 
 export async function getCurrentSupabaseUser() {
@@ -18,10 +27,7 @@ export async function getCurrentSupabaseUser() {
 // ── Locations ─────────────────────────────────────────────
 
 export async function listKcLocations() {
-  if (!hasSupabaseEnv) return [];
-  const { data, error } = await supabase.from("kc_locations").select("*");
-  throwOnError(error, "listKcLocations failed");
-  return data ?? [];
+  return listKcRowsForCurrentUser("kc_locations", "listKcLocations failed");
 }
 
 export async function createKcLocation(payload) {
@@ -57,10 +63,7 @@ export async function deleteKcLocation(id) {
 // ── Templates ─────────────────────────────────────────────
 
 export async function listKcTemplates() {
-  if (!hasSupabaseEnv) return [];
-  const { data, error } = await supabase.from("kc_checklist_templates").select("*");
-  throwOnError(error, "listKcTemplates failed");
-  return data ?? [];
+  return listKcRowsForCurrentUser("kc_checklist_templates", "listKcTemplates failed");
 }
 
 export async function createKcTemplate(payload) {
@@ -96,10 +99,7 @@ export async function deleteKcTemplate(id) {
 // ── Sessions ──────────────────────────────────────────────
 
 export async function listKcSessions() {
-  if (!hasSupabaseEnv) return [];
-  const { data, error } = await supabase.from("kc_check_sessions").select("*");
-  throwOnError(error, "listKcSessions failed");
-  return data ?? [];
+  return listKcRowsForCurrentUser("kc_check_sessions", "listKcSessions failed");
 }
 
 export async function createKcSession(payload) {
@@ -131,10 +131,13 @@ export async function listKcCheckItems() {
 
 export async function listKcCheckItemsBySessionId(sessionId) {
   if (!hasSupabaseEnv) return [];
+  const user = await getCurrentSupabaseUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from("kc_check_items")
     .select("*")
-    .eq("session_id", sessionId);
+    .eq("session_id", sessionId)
+    .eq("user_id", user.id);
   throwOnError(error, "listKcCheckItemsBySessionId failed");
   return data ?? [];
 }
@@ -175,10 +178,7 @@ export async function deleteKcCheckItemsBySessionId(sessionId) {
 // ── Temperature logs ──────────────────────────────────────
 
 export async function listKcTemperatureLogs() {
-  if (!hasSupabaseEnv) return [];
-  const { data, error } = await supabase.from("kc_temperature_logs").select("*");
-  throwOnError(error, "listKcTemperatureLogs failed");
-  return data ?? [];
+  return listKcRowsForCurrentUser("kc_temperature_logs", "listKcTemperatureLogs failed");
 }
 
 export async function createKcTemperatureLog(payload) {

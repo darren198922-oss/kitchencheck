@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation as useRouterLocation } from "react-router-dom";
-import { LayoutDashboard, ClipboardCheck, History, Settings } from "lucide-react";
-import { LocationProvider } from "@/lib/LocationContext";
+import { LayoutDashboard, ClipboardCheck, History, Settings, AlertTriangle } from "lucide-react";
+import { LocationProvider, useLocation } from "@/lib/LocationContext";
 import LocationSwitcher from "@/components/layout/LocationSwitcher";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
 
 function KitchenLayoutInner() {
   const { pathname } = useRouterLocation();
+  const { locationError } = useLocation();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -24,6 +25,18 @@ function KitchenLayoutInner() {
         </div>
         <LocationSwitcher />
       </header>
+
+      {locationError && (
+        <div
+          role="alert"
+          className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2.5 flex items-start gap-2"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-900 dark:text-amber-200 leading-snug">
+            KitchenCheck could not load your kitchen data. Please refresh or try again.
+          </p>
+        </div>
+      )}
 
       {/* Page content */}
       <main className="flex-1 overflow-y-auto pb-24">
