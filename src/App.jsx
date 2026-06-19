@@ -19,8 +19,27 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
 import KCLogin from './pages/KCLogin';
+import KCSignup from './pages/KCSignup';
+import KCForgotPassword from './pages/KCForgotPassword';
+import KCResetPassword from './pages/KCResetPassword';
 
-const PUBLIC_PATHS = new Set(['/login', '/pricing', '/privacy', '/terms', '/cookies']);
+const PUBLIC_PATHS = new Set([
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/pricing',
+  '/privacy',
+  '/terms',
+  '/cookies',
+]);
+
+const AUTH_PAGES = {
+  '/login': KCLogin,
+  '/signup': KCSignup,
+  '/forgot-password': KCForgotPassword,
+  '/reset-password': KCResetPassword,
+};
 
 const AuthenticatedApp = () => {
   const { pathname } = useLocation();
@@ -37,8 +56,9 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (pathname === '/login') {
-    return <KCLogin />;
+  const AuthPage = AUTH_PAGES[pathname];
+  if (AuthPage) {
+    return <AuthPage />;
   }
 
   if (!isAuthenticated && !PUBLIC_PATHS.has(pathname)) {
@@ -66,6 +86,9 @@ const AuthenticatedApp = () => {
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/cookies" element={<CookiePolicy />} />
       <Route path="/login" element={<KCLogin />} />
+      <Route path="/signup" element={<KCSignup />} />
+      <Route path="/forgot-password" element={<KCForgotPassword />} />
+      <Route path="/reset-password" element={<KCResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === "true";
 
-export default function KCLogin() {
+export default function KCSignup() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isLoadingAuth } = useAuth();
+  const { signup, isAuthenticated, isLoadingAuth } = useAuth();
   const notConfigured = !LOCAL_DEV_AUTH && !hasSupabaseEnv;
 
   const [email, setEmail] = useState("");
@@ -19,6 +19,7 @@ export default function KCLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     if (!isLoadingAuth && isAuthenticated) {
@@ -26,20 +27,29 @@ export default function KCLogin() {
     }
   }, [isAuthenticated, isLoadingAuth, navigate]);
 
-  const handleSignIn = async (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     if (!email.trim() || !password) {
       setError("Please enter your email and password.");
       return;
     }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate("/", { replace: true });
+      const result = await signup(email.trim(), password);
+      if (result.needsEmailConfirmation) {
+        setSuccessMessage("Account created. Check your email to confirm your account, then sign in.");
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err) {
-      console.error("KCLogin sign in failed:", err);
-      setError(err.message || "Sign in failed. Please try again.");
+      console.error("KCSignup failed:", err);
+      setError(err.message || "Could not create account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,8 +63,8 @@ export default function KCLogin() {
             <ClipboardCheck className="w-7 h-7 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">KitchenCheck</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl font-bold tracking-tight">Create account</h1>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               KitchenCheck helps small kitchens keep simple operational check records.
             </p>
           </div>
@@ -69,11 +79,11 @@ export default function KCLogin() {
             </div>
           )}
 
-          <form className="space-y-4" onSubmit={handleSignIn}>
+          <form className="space-y-4" onSubmit={handleSignUp}>
             <div className="space-y-2">
-              <Label htmlFor="kc-login-email">Email</Label>
+              <Label htmlFor="kc-signup-email">Email</Label>
               <Input
-                id="kc-login-email"
+                id="kc-signup-email"
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -85,23 +95,15 @@ export default function KCLogin() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="kc-login-password">Password</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-muted-foreground hover:text-foreground py-1"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
+              <Label htmlFor="kc-signup-password">Password</Label>
               <div className="relative">
                 <Input
-                  id="kc-login-password"
+                  id="kc-signup-password"
                   type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="At least 6 characters"
                   className="h-11 rounded-xl pr-11"
                   disabled={loading || notConfigured}
                 />
@@ -123,45 +125,27 @@ export default function KCLogin() {
               </div>
             )}
 
+            {successMessage && (
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/30 px-3 py-2.5">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">{successMessage}</p>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full h-11 text-sm font-bold"
               disabled={loading || notConfigured}
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Creating account…" : "Create account"}
             </Button>
           </form>
 
           <p className="text-center text-xs text-muted-foreground">
-            New here?{" "}
-            <Link to="/signup" className="text-foreground font-medium hover:underline">
-              Create an account
+            Already have an account?{" "}
+            <Link to="/login" className="text-foreground font-medium hover:underline">
+              Sign in
             </Link>
           </p>
-        </div>
-
-        <div className="text-center space-y-2">
-          <p className="text-xs text-muted-foreground">New to KitchenCheck?</p>
-          <nav
-            aria-label="Public information"
-            className="flex flex-wrap items-center justify-center text-xs text-muted-foreground"
-          >
-            <Link to="/pricing" className="hover:text-foreground px-2 py-2">
-              Pricing
-            </Link>
-            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
-            <Link to="/privacy" className="hover:text-foreground px-2 py-2">
-              Privacy
-            </Link>
-            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
-            <Link to="/terms" className="hover:text-foreground px-2 py-2">
-              Terms
-            </Link>
-            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
-            <Link to="/cookies" className="hover:text-foreground px-2 py-2">
-              Cookies
-            </Link>
-          </nav>
         </div>
       </div>
     </div>

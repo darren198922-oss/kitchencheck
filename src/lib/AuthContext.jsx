@@ -165,7 +165,13 @@ export const AuthProvider = ({ children }) => {
       throw new Error('KitchenCheck Supabase env vars are missing. Supabase auth is disabled.');
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    });
     if (error) {
       throw new Error(error.message);
     }
@@ -181,6 +187,36 @@ export const AuthProvider = ({ children }) => {
       session: data.session,
       needsEmailConfirmation: !data.session,
     };
+  };
+
+  const requestPasswordReset = async (email) => {
+    if (LOCAL_DEV_AUTH) {
+      throw new Error('Password reset is disabled while local dev auth is enabled.');
+    }
+    if (!hasSupabaseEnv) {
+      throw new Error('KitchenCheck Supabase env vars are missing. Supabase auth is disabled.');
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+  };
+
+  const updatePassword = async (password) => {
+    if (LOCAL_DEV_AUTH) {
+      throw new Error('Password reset is disabled while local dev auth is enabled.');
+    }
+    if (!hasSupabaseEnv) {
+      throw new Error('KitchenCheck Supabase env vars are missing. Supabase auth is disabled.');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
   const logout = async () => {
@@ -248,6 +284,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       login,
       signup,
+      requestPasswordReset,
+      updatePassword,
       logout,
       navigateToLogin,
       checkAppState,
