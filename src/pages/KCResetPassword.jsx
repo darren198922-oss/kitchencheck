@@ -6,6 +6,7 @@ import { hasSupabaseEnv, supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === "true";
 
@@ -197,6 +198,8 @@ export default function KCResetPassword() {
             </Link>
           </p>
         </div>
+
+        <SiteFooter showBuiltBy />
       </div>
     </div>
   );

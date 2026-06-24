@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 export default function CookiePolicy() {
   return (
@@ -46,7 +47,7 @@ export default function CookiePolicy() {
 
           <section className="space-y-2">
             <h2 className="font-bold text-base">Contact</h2>
-            <p>Questions? Email us at <a href="mailto:hello@kitchencheck.app" className="text-primary underline">hello@kitchencheck.app</a>.</p>
+            <p>Questions? Email us at <a href="mailto:hello@nfdlogicsystems.co.uk" className="text-primary underline">hello@nfdlogicsystems.co.uk</a>.</p>
           </section>
         </div>
 
@@ -55,6 +56,8 @@ export default function CookiePolicy() {
           <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
           <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
         </div>
+
+        <SiteFooter showBuiltBy className="pt-2" />
       </div>
     </div>
   );

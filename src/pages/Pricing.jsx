@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Mail, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 const TIERS = [
   {
@@ -139,7 +140,7 @@ export default function Pricing() {
                 ))}
               </ul>
               {tier.cta === "contact" ? (
-                <a href="mailto:hello@kitchencheck.app">
+                <a href="mailto:hello@nfdlogicsystems.co.uk">
                   <Button variant="outline" className="w-full">
                     <Mail className="w-4 h-4" /> Get in touch
                   </Button>
@@ -162,7 +163,7 @@ export default function Pricing() {
         {/* No nonsense line */}
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-center space-y-1">
           <p className="text-sm font-semibold">No per-user fees. No setup charges. Cancel any time.</p>
-          <p className="text-xs text-muted-foreground">Questions? Email us at <a href="mailto:hello@kitchencheck.app" className="text-primary underline">hello@kitchencheck.app</a></p>
+          <p className="text-xs text-muted-foreground">Questions? Email us at <a href="mailto:hello@nfdlogicsystems.co.uk" className="text-primary underline">hello@nfdlogicsystems.co.uk</a></p>
         </div>
 
         {/* Disclaimer */}
@@ -176,6 +177,8 @@ export default function Pricing() {
           <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
           <Link to="/cookies" className="hover:text-foreground">Cookie Policy</Link>
         </div>
+
+        <SiteFooter showBuiltBy className="pt-2" />
       </div>
     </div>
   );

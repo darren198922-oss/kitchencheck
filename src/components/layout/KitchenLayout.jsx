@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation as useRouterLocation } from "react-router-dom
 import { LayoutDashboard, ClipboardCheck, History, Settings, AlertTriangle } from "lucide-react";
 import { LocationProvider, useLocation } from "@/lib/LocationContext";
 import LocationSwitcher from "@/components/layout/LocationSwitcher";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 const navItems = [
   { path: "/", label: "Today", icon: LayoutDashboard },
@@ -41,6 +42,7 @@ function KitchenLayoutInner() {
       {/* Page content */}
       <main className="flex-1 overflow-y-auto pb-24">
         <Outlet />
+        <SiteFooter className="pb-4" />
       </main>
 
       {/* Bottom nav */}
