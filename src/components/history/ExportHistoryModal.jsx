@@ -3,7 +3,6 @@ import { format, subDays, startOfMonth } from "date-fns";
 import { X, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { downloadKcHistoryPdf } from "@/lib/kcPdfExport";
 import {
   getLocalDevSessions,
   getLocalDevCheckItemsBySessionId,
@@ -122,6 +121,8 @@ export default function ExportHistoryModal({ locationId, locationName, onClose }
         startDate,
         endDate,
       });
+
+      const { downloadKcHistoryPdf } = await import("@/lib/kcPdfExport");
 
       downloadKcHistoryPdf({
         sessions,

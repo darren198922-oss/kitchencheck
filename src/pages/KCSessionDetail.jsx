@@ -13,7 +13,6 @@ import {
   deleteKcCheckItemPhotos,
 } from "@/lib/kitchencheckSupabase";
 import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
-import { downloadKcSessionPdf } from "@/lib/kcPdfExport";
 import { useLocation as useKCLocation } from "@/lib/LocationContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, X, AlertTriangle, ChevronLeft, Minus, FileDown, Trash2 } from "lucide-react";
@@ -155,6 +154,8 @@ export default function KCSessionDetail() {
     if (exportingPdf || !session) return;
     setExportingPdf(true);
     try {
+      const { downloadKcSessionPdf } = await import("@/lib/kcPdfExport");
+
       downloadKcSessionPdf({
         session,
         items: checkItems,
