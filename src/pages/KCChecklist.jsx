@@ -72,7 +72,7 @@ function PhotoCapture({ photoUrl, onPhotoChange, onSkipWithNote }) {
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         canvas.toBlob((blob) => resolve(new File([blob], file.name, { type: "image/jpeg" })), "image/jpeg", 0.82);
       };
-      img.src = e.target.result;
+      if (typeof e.target?.result === "string") img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });

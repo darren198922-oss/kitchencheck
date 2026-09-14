@@ -297,6 +297,7 @@ export default function KCSessionDetail() {
                     <CheckItemPhoto
                       photoPath={item.photo_url}
                       imgClassName="w-24 h-24 object-cover rounded-lg border border-border mt-1"
+                      linkHint="Tap photo to enlarge"
                     />
                   )}
                 </div>

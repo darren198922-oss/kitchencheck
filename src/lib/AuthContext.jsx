@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { supabase, hasSupabaseEnv } from '@/lib/supabaseClient';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 const LOCAL_DEV_AUTH = import.meta.env.VITE_LOCAL_DEV_AUTH === 'true';
 

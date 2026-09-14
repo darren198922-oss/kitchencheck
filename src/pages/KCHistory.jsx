@@ -25,7 +25,7 @@ export default function KCHistory() {
       try {
         const data = LOCAL_DEV_AUTH
           ? getLocalDevSessions()
-          : (await listKcSessions()).map(normalizeKcSession);
+          : (await listKcSessions()).map(session => normalizeKcSession(session));
         const filtered = data.filter(s =>
           !s.location_id || !activeLocationId || s.location_id === activeLocationId
         );
@@ -76,7 +76,7 @@ export default function KCHistory() {
   // Record summary: count last 7 days
   const last7 = sessions.filter(s => {
     if (!s.session_date) return false;
-    const diff = (new Date(today) - new Date(s.session_date)) / 86400000;
+    const diff = (new Date(today).getTime() - new Date(s.session_date).getTime()) / 86400000;
     return diff >= 0 && diff < 7;
   });
   const flaggedRecent = last7.filter(s => s.status === "flagged").length;
