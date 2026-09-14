@@ -10,8 +10,10 @@ import {
   updateKcTemplate,
   deleteKcTemplate,
   listKcSessions,
+  listKcCheckItemsBySessionId,
   deleteKcCheckItemsBySessionId,
   deleteKcSession,
+  deleteKcCheckItemPhotos,
   listKcTemperatureLogs,
   deleteKcTemperatureLog,
 } from "@/lib/kitchencheckSupabase";
@@ -77,8 +79,21 @@ async function deleteConnectedRecordsForLocation(locationId) {
   const locationSessions = allSessions.filter(s => s.location_id === locationId);
 
   for (const session of locationSessions) {
+    const items = await listKcCheckItemsBySessionId(session.id);
+    const photoPaths = items
+      .map(item => item.photo_url)
+      .filter(Boolean);
+
     await deleteKcCheckItemsBySessionId(session.id);
     await deleteKcSession(session.id);
+
+    if (photoPaths.length > 0) {
+      try {
+        await deleteKcCheckItemPhotos(photoPaths);
+      } catch (photoCleanupErr) {
+        console.error("KCSettings photo cleanup failed:", photoCleanupErr);
+      }
+    }
   }
 
   const allLogs = await listKcTemperatureLogs();

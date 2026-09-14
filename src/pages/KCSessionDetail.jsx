@@ -10,6 +10,7 @@ import {
   deleteKcCheckItemsBySessionId,
   deleteKcSession,
   getKcPhotoSignedUrl,
+  deleteKcCheckItemPhotos,
 } from "@/lib/kitchencheckSupabase";
 import { normalizeKcSession, normalizeKcCheckItem } from "@/lib/kcSessionNormalize";
 import { downloadKcSessionPdf } from "@/lib/kcPdfExport";
@@ -125,8 +126,20 @@ export default function KCSessionDetail() {
       if (LOCAL_DEV_AUTH) {
         deleteLocalDevSession(session.id);
       } else {
+        const photoPaths = checkItems
+          .map(item => item.photo_url)
+          .filter(Boolean);
+
         await deleteKcCheckItemsBySessionId(session.id);
         await deleteKcSession(session.id);
+
+        if (photoPaths.length > 0) {
+          try {
+            await deleteKcCheckItemPhotos(photoPaths);
+          } catch (photoCleanupErr) {
+            console.error("KCSessionDetail photo cleanup failed:", photoCleanupErr);
+          }
+        }
       }
       toast.success("Record deleted");
       navigate("/history");

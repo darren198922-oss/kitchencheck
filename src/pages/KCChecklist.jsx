@@ -13,6 +13,7 @@ import {
   createKcCheckItems,
   deleteKcSession,
   uploadKcCheckItemPhoto,
+  deleteKcCheckItemPhotos,
 } from "@/lib/kitchencheckSupabase";
 import { CheckCircle2, AlertTriangle, ChevronLeft, Flag, Check, X, Minus, Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -513,6 +514,8 @@ export default function KCChecklist() {
           return;
         }
 
+        const uploadedPhotoPaths = [];
+
         try {
           const itemPayloads = [];
           for (let i = 0; i < items.length; i++) {
@@ -525,6 +528,7 @@ export default function KCChecklist() {
                 sessionId: session.id,
                 file: item.photo_file,
               });
+              if (photoPath) uploadedPhotoPaths.push(photoPath);
             }
             itemPayloads.push({
               user_id: user.id,
@@ -540,10 +544,19 @@ export default function KCChecklist() {
           await createKcCheckItems(itemPayloads);
         } catch (err) {
           console.error("KCChecklist item create failed:", err);
+
           try {
             await deleteKcSession(session.id);
           } catch (rollbackErr) {
             console.error("KCChecklist session rollback failed:", rollbackErr);
+          }
+
+          if (uploadedPhotoPaths.length > 0) {
+            try {
+              await deleteKcCheckItemPhotos(uploadedPhotoPaths);
+            } catch (photoCleanupErr) {
+              console.error("KCChecklist photo rollback failed:", photoCleanupErr);
+            }
           }
           setSubmitError(
             items.some(i => i.photo_file)

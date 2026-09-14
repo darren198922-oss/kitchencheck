@@ -279,6 +279,32 @@ export async function uploadKcCheckItemPhoto({ userId, locationId, sessionId, fi
   return path;
 }
 
+export async function deleteKcCheckItemPhotos(paths) {
+  if (!hasSupabaseEnv) return false;
+
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+
+  const safePaths = [...new Set((paths || []).filter(
+    path =>
+      typeof path === "string" &&
+      path.length > 0 &&
+      !path.startsWith("http://") &&
+      !path.startsWith("https://") &&
+      !path.startsWith("blob:") &&
+      path.startsWith(`${user.id}/`)
+  ))];
+
+  if (safePaths.length === 0) return true;
+
+  const { error } = await supabase.storage
+    .from(KC_PHOTOS_BUCKET)
+    .remove(safePaths);
+
+  throwOnError(error, "deleteKcCheckItemPhotos failed");
+  return true;
+}
+
 export async function getKcPhotoSignedUrl(path) {
   if (!hasSupabaseEnv || !path) return null;
   if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:")) {
