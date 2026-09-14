@@ -43,10 +43,13 @@ export async function createKcLocation(payload) {
 
 export async function updateKcLocation(id, payload) {
   if (!hasSupabaseEnv) return null;
+  const user = await getCurrentSupabaseUser();
+  if (!user) return null;
   const { data, error } = await supabase
     .from("kc_locations")
     .update(payload)
     .eq("id", id)
+    .eq("user_id", user.id)
     .select()
     .single();
   throwOnError(error, "updateKcLocation failed");
@@ -55,7 +58,13 @@ export async function updateKcLocation(id, payload) {
 
 export async function deleteKcLocation(id) {
   if (!hasSupabaseEnv) return false;
-  const { error } = await supabase.from("kc_locations").delete().eq("id", id);
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+  const { error } = await supabase
+    .from("kc_locations")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   throwOnError(error, "deleteKcLocation failed");
   return true;
 }
@@ -79,10 +88,13 @@ export async function createKcTemplate(payload) {
 
 export async function updateKcTemplate(id, payload) {
   if (!hasSupabaseEnv) return null;
+  const user = await getCurrentSupabaseUser();
+  if (!user) return null;
   const { data, error } = await supabase
     .from("kc_checklist_templates")
     .update(payload)
     .eq("id", id)
+    .eq("user_id", user.id)
     .select()
     .single();
   throwOnError(error, "updateKcTemplate failed");
@@ -91,7 +103,13 @@ export async function updateKcTemplate(id, payload) {
 
 export async function deleteKcTemplate(id) {
   if (!hasSupabaseEnv) return false;
-  const { error } = await supabase.from("kc_checklist_templates").delete().eq("id", id);
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+  const { error } = await supabase
+    .from("kc_checklist_templates")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   throwOnError(error, "deleteKcTemplate failed");
   return true;
 }
@@ -115,20 +133,18 @@ export async function createKcSession(payload) {
 
 export async function deleteKcSession(id) {
   if (!hasSupabaseEnv) return false;
-  const { error } = await supabase.from("kc_check_sessions").delete().eq("id", id);
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+  const { error } = await supabase
+    .from("kc_check_sessions")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   throwOnError(error, "deleteKcSession failed");
   return true;
 }
 
 // ── Check items ───────────────────────────────────────────
-
-// Reserved for future admin/reporting use; prefer listKcCheckItemsBySessionId for session reads.
-export async function listKcCheckItems() {
-  if (!hasSupabaseEnv) return [];
-  const { data, error } = await supabase.from("kc_check_items").select("*");
-  throwOnError(error, "listKcCheckItems failed");
-  return data ?? [];
-}
 
 export async function listKcCheckItemsBySessionId(sessionId) {
   if (!hasSupabaseEnv) return [];
@@ -156,10 +172,13 @@ export async function createKcCheckItems(items) {
 
 export async function updateKcCheckItem(id, payload) {
   if (!hasSupabaseEnv) return null;
+  const user = await getCurrentSupabaseUser();
+  if (!user) return null;
   const { data, error } = await supabase
     .from("kc_check_items")
     .update(payload)
     .eq("id", id)
+    .eq("user_id", user.id)
     .select()
     .single();
   throwOnError(error, "updateKcCheckItem failed");
@@ -168,10 +187,13 @@ export async function updateKcCheckItem(id, payload) {
 
 export async function deleteKcCheckItemsBySessionId(sessionId) {
   if (!hasSupabaseEnv) return false;
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
   const { error } = await supabase
     .from("kc_check_items")
     .delete()
-    .eq("session_id", sessionId);
+    .eq("session_id", sessionId)
+    .eq("user_id", user.id);
   throwOnError(error, "deleteKcCheckItemsBySessionId failed");
   return true;
 }
@@ -195,7 +217,13 @@ export async function createKcTemperatureLog(payload) {
 
 export async function deleteKcTemperatureLog(id) {
   if (!hasSupabaseEnv) return false;
-  const { error } = await supabase.from("kc_temperature_logs").delete().eq("id", id);
+  const user = await getCurrentSupabaseUser();
+  if (!user) return false;
+  const { error } = await supabase
+    .from("kc_temperature_logs")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   throwOnError(error, "deleteKcTemperatureLog failed");
   return true;
 }
