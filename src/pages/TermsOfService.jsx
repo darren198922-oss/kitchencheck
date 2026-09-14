@@ -15,7 +15,7 @@ export default function TermsOfService() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
         <div>
           <h1 className="text-2xl font-bold">Terms of Service</h1>
-          <p className="text-sm text-muted-foreground mt-1">Last updated: May 2025</p>
+          <p className="text-sm text-muted-foreground mt-1">Last updated: September 2026</p>
         </div>
 
         <div className="space-y-6 text-sm text-foreground leading-relaxed">
@@ -37,7 +37,7 @@ export default function TermsOfService() {
 
           <section className="space-y-2">
             <h2 className="font-bold text-base">Records and data</h2>
-            <p>You own the records you create in KitchenCheck. We store them securely on your behalf. You can export your records at any time as PDFs. On account cancellation, we will retain your data for 30 days before deletion unless you request earlier removal.</p>
+            <p>You own the records you create in KitchenCheck. We store them on your behalf. You can export supported records as PDFs. You can request deletion of your account and associated data by contacting us.</p>
           </section>
 
           <section className="space-y-2">
@@ -47,7 +47,7 @@ export default function TermsOfService() {
 
           <section className="space-y-2">
             <h2 className="font-bold text-base">Changes</h2>
-            <p>We may update these terms from time to time. We will notify you of significant changes by email. Continued use of KitchenCheck after changes means you accept the updated terms.</p>
+            <p>We may update these terms from time to time. The current version and its revision date will be shown on this page. Continued use of KitchenCheck after changes means you accept the updated terms.</p>
           </section>
 
           <section className="space-y-2">

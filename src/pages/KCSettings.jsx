@@ -398,7 +398,7 @@ function AboutSection() {
           <span className="text-sm font-medium">Cookie Policy</span>
           <ExternalLink className="w-4 h-4 text-muted-foreground" />
         </Link>
-        <a href="mailto:hello@kitchencheck.app" className="flex items-center justify-between px-4 py-3 active:bg-secondary transition-colors">
+        <a href="mailto:hello@nfdlogicsystems.co.uk" className="flex items-center justify-between px-4 py-3 active:bg-secondary transition-colors">
           <span className="text-sm font-medium">Contact & Support</span>
           <ExternalLink className="w-4 h-4 text-muted-foreground" />
         </a>

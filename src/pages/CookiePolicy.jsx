@@ -15,7 +15,7 @@ export default function CookiePolicy() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
         <div>
           <h1 className="text-2xl font-bold">Cookie Policy</h1>
-          <p className="text-sm text-muted-foreground mt-1">Last updated: May 2025</p>
+          <p className="text-sm text-muted-foreground mt-1">Last updated: September 2026</p>
         </div>
 
         <div className="space-y-6 text-sm text-foreground leading-relaxed">

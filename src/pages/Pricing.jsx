@@ -73,12 +73,12 @@ export default function Pricing() {
 
         {/* Heading */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Simple, flat pricing</h1>
+          <h1 className="text-3xl font-bold">Planned pricing</h1>
           <p className="text-muted-foreground text-base">
-            Less than the cost of one takeaway coffee a week. Priced by site, not by staff.
+            Simple pricing by site, not by staff.
           </p>
           <p className="text-sm font-semibold text-primary mt-1">
-            Early pilot: 60 days free, then from £7.99/month per site. Cancel anytime.
+            KitchenCheck is currently in pilot. In-app billing and automatic plan enforcement are not live yet.
           </p>
         </div>
 
@@ -156,13 +156,13 @@ export default function Pricing() {
         {/* Annual helper copy */}
         {billingPeriod === "annual" && (
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Annual plans include roughly 2 months free.</p>
+            <p className="text-sm text-muted-foreground">Planned annual pricing includes roughly 2 months compared with monthly billing.</p>
           </div>
         )}
 
         {/* No nonsense line */}
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-center space-y-1">
-          <p className="text-sm font-semibold">No per-user fees. No setup charges. Cancel any time.</p>
+          <p className="text-sm font-semibold">These prices describe the intended paid plans when billing launches.</p>
           <p className="text-xs text-muted-foreground">Questions? Email us at <a href="mailto:hello@nfdlogicsystems.co.uk" className="text-primary underline">hello@nfdlogicsystems.co.uk</a></p>
         </div>
 
